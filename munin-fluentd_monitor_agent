@@ -53,18 +53,46 @@ def write_result_t(host, type, rtc, bql, btqs, stats)
 end
 
 def munin_config(type)
-   puts 'graph_title fluentd monitor_agent'
-   puts 'graph_args --rigid --lower-limit 0'
-   puts 'graph_scale no'
-   puts 'graph_vlabel Count'
-   puts 'graph_category Fluentd'
-   fields = ['Retry_Count', 'Buffer_Queue_Length', 'Buffer_Total_Queued_Size']
-   fields.each do |field|
-     puts "#{type}_#{field}.label #{type}_#{field}"
-     puts "#{type}_#{field}.min 0"
-     puts "#{type}_#{field}.draw LINE2"
-     puts "#{type}_#{field}.type GAUGE"
-   end
-   puts ""
-   exit 0
+  fields = ['Retry_Count', 'Buffer_Queue_Length', 'Buffer_Total_Queued_Size']
+  fields.each do |field|
+    puts "#{type}_#{field}.label #{type}_#{field}"
+    puts "#{type}_#{field}.min 0"
+    puts "#{type}_#{field}.draw LINE2"
+    puts "#{type}_#{field}.type GAUGE"
+  end
+end
+
+#
+# Main
+#
+parsed = get_td_status($host)
+configs = parsed['plugins'].size.to_i
+host = $host.gsub(".", "-")
+#
+if ARGV.shift == 'config'
+  puts 'graph_title fluentd monitor_agent'
+  puts 'graph_args --rigid --lower-limit 0'
+  puts 'graph_scale no'
+  puts 'graph_vlabel Count'
+  puts 'graph_category Fluentd'
+  (0..(configs-1)).each do |config|
+    type = parsed['plugins'][config]['type'] rescue nil
+    munin_config(type)
+  end
+  puts ""
+  exit 0
+else
+  (0..(configs-1)).each do |config|
+    type = parsed['plugins'][config]['type'] rescue nil
+    rtc = parsed['plugins'][config]['retry_count'] rescue nil
+    bql = parsed['plugins'][config]['buffer_queue_length'] rescue nil
+    btqs = parsed['plugins'][config]['buffer_total_queued_size'] rescue nil
+    #
+    # for debug
+    #write_result_h(host, type, rtc, bql, btqs)
+    if ( rtc != nil and bql != nil and btqs != nil )
+      stats = check_stats(rtc, bql, btqs)
+      write_result_t(host, type, rtc, bql, btqs, stats)
+    end
+  end
 end
