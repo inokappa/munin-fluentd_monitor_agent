@@ -52,14 +52,14 @@ def write_result_t(host, type, rtc, bql, btqs, stats)
   puts "#{type}_Buffer_Total_Queued_Size.value " + "#{btqs}"
 end
 
-def munin_config(type)
-  fields = ['Retry_Count', 'Buffer_Queue_Length', 'Buffer_Total_Queued_Size']
-  fields.each do |field|
-    puts "#{type}_#{field}.label #{type}_#{field}"
-    puts "#{type}_#{field}.min 0"
-    puts "#{type}_#{field}.draw LINE2"
-    puts "#{type}_#{field}.type GAUGE"
-  end
+def plugin_config(type)
+   fields = ['Retry_Count', 'Buffer_Queue_Length', 'Buffer_Total_Queued_Size']
+   fields.each do |field|
+     puts "#{type}_#{field}.label #{type}_#{field}"
+     puts "#{type}_#{field}.min 0"
+     puts "#{type}_#{field}.draw LINE2"
+     puts "#{type}_#{field}.type GAUGE"
+   end
 end
 
 #
@@ -73,11 +73,11 @@ if ARGV.shift == 'config'
   puts 'graph_title fluentd monitor_agent'
   puts 'graph_args --rigid --lower-limit 0'
   puts 'graph_scale no'
-  puts 'graph_vlabel Count'
+  puts 'graph_vlabel Byte'
   puts 'graph_category Fluentd'
   (0..(configs-1)).each do |config|
     type = parsed['plugins'][config]['type'] rescue nil
-    munin_config(type)
+    plugin_config(type)
   end
   puts ""
   exit 0
